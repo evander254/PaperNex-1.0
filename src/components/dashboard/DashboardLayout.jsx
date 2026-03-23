@@ -1,0 +1,118 @@
+import React, { useState, useEffect } from 'react';
+import { Outlet, useNavigate } from 'react-router-dom';
+import Sidebar from './Sidebar';
+import TopNavbar from './TopNavbar';
+import { supabase } from '../../lib/supabase';
+import { motion } from 'framer-motion';
+
+export default function DashboardLayout() {
+    const [session, setSession] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [sidebarOpen, setSidebarOpen] = useState(true);
+    const [isMobile, setIsMobile] = useState(false);
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        // Session fetching
+        let mounted = true;
+
+        async function checkAuth() {
+            const { data: { session: currentSession } } = await supabase.auth.getSession();
+            if (mounted) {
+                if (!currentSession) {
+                    navigate('/');
+                } else {
+                    setSession(currentSession);
+                }
+                setLoading(false);
+            }
+        }
+
+        checkAuth();
+
+        const { data: authListener } = supabase.auth.onAuthStateChange(
+            (event, session) => {
+                if (!session) {
+                    navigate('/');
+                } else {
+                    setSession(session);
+                }
+            }
+        );
+
+        // Responsive listening
+        const mql = window.matchMedia('(max-width: 768px)');
+        const handleResize = (e) => {
+            setIsMobile(e.matches);
+            if (e.matches) {
+                setSidebarOpen(false);
+            } else {
+                setSidebarOpen(true);
+            }
+        };
+
+        setIsMobile(mql.matches);
+        if (mql.matches) {
+            setSidebarOpen(false);
+        }
+
+        mql.addEventListener('change', handleResize);
+
+        return () => {
+            mounted = false;
+            authListener.subscription.unsubscribe();
+            mql.removeEventListener('change', handleResize);
+        };
+    }, [navigate]);
+
+    const handleSignOut = async () => {
+        await supabase.auth.signOut();
+    };
+
+    const toggleSidebar = () => {
+        setSidebarOpen(!sidebarOpen);
+    };
+
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-gray-50 dark:bg-[#030014] flex items-center justify-center text-gray-900 dark:text-white transition-colors duration-300">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-500"></div>
+            </div>
+        );
+    }
+
+    if (!session) return null;
+
+    return (
+        <div className="min-h-screen flex text-gray-900 dark:text-white transition-colors duration-300 overflow-hidden relative">
+            <Sidebar
+                isOpen={sidebarOpen}
+                isMobile={isMobile}
+                toggleSidebar={toggleSidebar}
+                setSidebarOpen={setSidebarOpen}
+            />
+
+            <main
+                className={`flex-1 flex flex-col transition-all duration-300 bg-gray-50 dark:bg-[#030014] h-screen overflow-hidden ${!isMobile ? (sidebarOpen ? 'ml-64' : 'ml-20') : 'ml-0'
+                    }`}
+            >
+                <TopNavbar
+                    setSidebarOpen={setSidebarOpen}
+                    session={session}
+                    handleSignOut={handleSignOut}
+                />
+
+                <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 custom-scrollbar">
+                    <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="max-w-7xl mx-auto h-full"
+                    >
+                        <Outlet context={{ session }} />
+                    </motion.div>
+                </div>
+            </main>
+        </div>
+    );
+}

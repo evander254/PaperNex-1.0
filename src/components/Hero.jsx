@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 
-export default function Hero() {
+export default function Hero({ onOpenAuth }) {
     return (
         <div id="home" className="relative min-h-[100vh] flex items-center pt-24 pb-12 overflow-hidden bg-[#030014]">
             {/* Background gradients and elements */}
@@ -30,7 +30,10 @@ export default function Hero() {
                     </p>
 
                     <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                        <button className="w-full sm:w-auto px-8 py-4 rounded-full bg-gradient-to-r from-brand-600 to-blue-600 text-white font-semibold text-lg hover:from-brand-500 hover:to-blue-500 transition-all shadow-[0_0_20px_rgba(109,40,217,0.4)] hover:shadow-[0_0_30px_rgba(109,40,217,0.6)] hover:-translate-y-1">
+                        <button
+                            onClick={onOpenAuth}
+                            className="w-full sm:w-auto px-8 py-4 rounded-full bg-gradient-to-r from-brand-600 to-blue-600 text-white font-semibold text-lg hover:from-brand-500 hover:to-blue-500 transition-all shadow-[0_0_20px_rgba(109,40,217,0.4)] hover:shadow-[0_0_30px_rgba(109,40,217,0.6)] hover:-translate-y-1"
+                        >
                             Start Now
                         </button>
                         <button className="w-full sm:w-auto px-8 py-4 rounded-full bg-white/5 border border-white/10 text-white font-semibold text-lg hover:bg-white/10 transition-all backdrop-blur-sm">

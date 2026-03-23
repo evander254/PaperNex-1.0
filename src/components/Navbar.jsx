@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 
-export default function Navbar() {
+export default function Navbar({ onOpenAuth }) {
     const [scrolled, setScrolled] = useState(false);
 
     useEffect(() => {
@@ -37,7 +37,10 @@ export default function Navbar() {
                     </div>
 
                     <div className="hidden md:flex">
-                        <button className="px-6 py-2.5 rounded-full bg-white text-[#030014] font-semibold text-sm hover:bg-gray-100 transition-colors shadow-[0_0_15px_rgba(255,255,255,0.3)] hover:shadow-[0_0_20px_rgba(255,255,255,0.5)]">
+                        <button
+                            onClick={onOpenAuth}
+                            className="px-6 py-2.5 rounded-full bg-white text-[#030014] font-semibold text-sm hover:bg-gray-100 transition-colors shadow-[0_0_15px_rgba(255,255,255,0.3)] hover:shadow-[0_0_20px_rgba(255,255,255,0.5)]"
+                        >
                             Get Started
                         </button>
                     </div>

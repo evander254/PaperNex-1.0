@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
 
-export default function CTA() {
+export default function CTA({ onOpenAuth }) {
     return (
         <section className="relative py-24 bg-[#0a0624] overflow-hidden z-10">
             <div className="absolute inset-0 z-0">
@@ -34,7 +34,10 @@ export default function CTA() {
                     viewport={{ once: true }}
                     transition={{ delay: 0.2 }}
                 >
-                    <button className="group inline-flex items-center justify-center gap-2 px-8 py-4 rounded-full bg-white text-[#0a0624] font-bold text-lg hover:bg-gray-100 transition-all shadow-[0_0_30px_rgba(255,255,255,0.4)] hover:shadow-[0_0_40px_rgba(255,255,255,0.6)] hover:-translate-y-1">
+                    <button
+                        onClick={onOpenAuth}
+                        className="group inline-flex items-center justify-center gap-2 px-8 py-4 rounded-full bg-white text-[#0a0624] font-bold text-lg hover:bg-gray-100 transition-all shadow-[0_0_30px_rgba(255,255,255,0.4)] hover:shadow-[0_0_40px_rgba(255,255,255,0.6)] hover:-translate-y-1"
+                    >
                         Get Started Today
                         <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                     </button>

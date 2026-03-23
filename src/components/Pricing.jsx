@@ -31,7 +31,7 @@ const tiers = [
     },
 ];
 
-export default function Pricing() {
+export default function Pricing({ onOpenAuth }) {
     return (
         <section id="pricing" className="py-24 bg-[#030014] relative z-10">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -92,10 +92,13 @@ export default function Pricing() {
                                 ))}
                             </ul>
 
-                            <button className={`w-full py-4 rounded-xl font-bold transition-all ${tier.popular
-                                ? 'bg-gradient-to-r from-brand-600 to-blue-600 text-white shadow-lg shadow-brand-500/25 hover:shadow-brand-500/40 hover:-translate-y-0.5'
-                                : 'bg-white/5 text-white hover:bg-white/10 border border-white/10'
-                                }`}>
+                            <button
+                                onClick={onOpenAuth}
+                                className={`w-full py-4 rounded-xl font-bold transition-all ${tier.popular
+                                    ? 'bg-gradient-to-r from-brand-600 to-blue-600 text-white shadow-lg shadow-brand-500/25 hover:shadow-brand-500/40 hover:-translate-y-0.5'
+                                    : 'bg-white/5 text-white hover:bg-white/10 border border-white/10'
+                                    }`}
+                            >
                                 {tier.buttonText}
                             </button>
                         </motion.div>

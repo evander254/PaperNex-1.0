@@ -17,7 +17,7 @@ export default function AdminRequests() {
         try {
             const { data, error } = await supabase
                 .from('requests')
-                .select('*, profiles(email), services(title)')
+                .select('*, profiles(email), services(name)')
                 .order('created_at', { ascending: false });
 
             if (error) throw error;
@@ -86,7 +86,7 @@ export default function AdminRequests() {
                             return (
                                 <tr key={req.id} className="hover:bg-white/[0.02] transition-colors">
                                     <td className="px-6 py-4 whitespace-nowrap text-sm">{req.profiles?.email}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap font-medium text-sm">{req.services?.title}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap font-medium text-sm">{req.services?.name}</td>
                                     <td className="px-6 py-4 text-sm text-gray-400 max-w-xs truncate">{req.details || '-'}</td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${config.bg} ${config.color}`}>

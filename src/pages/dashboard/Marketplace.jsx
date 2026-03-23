@@ -21,7 +21,7 @@ export default function Marketplace() {
     useEffect(() => {
         const fetchServices = async () => {
             try {
-                const { data, error } = await supabase.from('services').select('*').order('title');
+                const { data, error } = await supabase.from('services').select('*').order('name');
                 if (error) throw error;
                 if (data) setServices(data);
             } catch (err) {
@@ -36,7 +36,7 @@ export default function Marketplace() {
 
     const filteredServices = services.filter(service => {
         const matchesCategory = selectedCategory === 'All' || service.category === selectedCategory;
-        const matchesSearch = (service.title || '').toLowerCase().includes(search.toLowerCase()) ||
+        const matchesSearch = (service.name || '').toLowerCase().includes(search.toLowerCase()) ||
             (service.description || '').toLowerCase().includes(search.toLowerCase());
         return matchesCategory && matchesSearch;
     });
@@ -168,7 +168,7 @@ export default function Marketplace() {
                                         <span className="inline-block px-2.5 py-1 rounded-md text-xs font-semibold bg-brand-50 text-brand-700 dark:bg-brand-500/10 dark:text-brand-300 mb-2">
                                             {selectedService.category}
                                         </span>
-                                        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Request {selectedService.title}</h2>
+                                        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Request {selectedService.name}</h2>
                                     </div>
                                     <button
                                         onClick={() => setSelectedService(null)}

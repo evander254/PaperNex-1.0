@@ -38,12 +38,13 @@ export default function Sidebar({ isOpen, isMobile, toggleSidebar, setSidebarOpe
             >
                 {/* Header */}
                 <div className="h-16 flex items-center justify-between px-4 border-b border-gray-200 dark:border-white/10">
-                    <div className={clsx("flex items-center gap-2 overflow-hidden", !isOpen && !isMobile && "justify-center w-full")}>
-                        <div className="w-8 h-8 rounded-lg min-w-[32px] bg-gradient-to-tr from-brand-600 to-blue-600 flex items-center justify-center font-bold text-white text-xl">
-                            P
-                        </div>
-                        {(isOpen || isMobile) && (
-                            <span className="font-bold text-xl tracking-wide whitespace-nowrap text-gray-900 dark:text-white">PaperNex</span>
+                    <div className={clsx("flex items-center overflow-hidden", !isOpen && !isMobile && "justify-center w-full")}>
+                        {(isOpen || isMobile) ? (
+                            <img src="/logo.png" alt="PaperNex Logo" className="h-8 md:h-9 w-auto object-contain drop-shadow-sm dark:brightness-100" />
+                        ) : (
+                            <div className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center relative">
+                                <img src="/logo.png" alt="Logo" className="absolute left-[-2px] h-full w-[140px] object-scale-down max-w-none origin-left scale-[2.5]" />
+                            </div>
                         )}
                     </div>
 

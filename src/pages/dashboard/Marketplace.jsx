@@ -4,14 +4,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import ServiceCard from '../../components/dashboard/ServiceCard';
 
 const servicesData = [
-    { id: 1, title: 'Turnitin AI Report', description: 'Get a comprehensive AI similarity report from Turnitin.', price: 5.00, iconKey: 'Turnitin', category: 'Analysis' },
-    { id: 2, title: 'Plagiarism Report', description: 'Check your document for unintentional plagiarism.', price: 3.50, iconKey: 'Plagiarism', category: 'Analysis' },
-    { id: 3, title: 'Course Hero Unlock', description: 'Unlock a specific document or solution from Course Hero.', price: 2.00, iconKey: 'CourseHero', category: 'Unlocks' },
-    { id: 4, title: 'Chegg Unlock', description: 'Get step-by-step solutions unlocked from Chegg.', price: 1.50, iconKey: 'Chegg', category: 'Unlocks' },
-    { id: 5, title: 'Scribd Access', description: 'Full access to a specific Scribd book or document.', price: 2.50, iconKey: 'Scribd', category: 'Unlocks' },
-    { id: 6, title: 'Studypool Q&A', description: 'Unlock answers from Studypool experts.', price: 3.00, iconKey: 'Studypool', category: 'Unlocks' },
-    { id: 7, title: 'AI Content Refinement', description: 'Humanize AI generated text to bypass detectors and improve flow.', price: 10.00, iconKey: 'AI', category: 'Refinement' },
-    { id: 8, title: 'Proxy Services', description: 'Secure and anonymous proxy for research.', price: 15.00, iconKey: 'Proxy', category: 'Other' },
+    { id: 1, title: 'Turnitin AI Report', description: 'Get a comprehensive AI similarity report from Turnitin.', price: 100.00, iconKey: 'Turnitin', category: 'Analysis' },
+    { id: 2, title: 'Plagiarism Report', description: 'Check your document for unintentional plagiarism.', price: 50, iconKey: 'Plagiarism', category: 'Analysis' },
+    { id: 3, title: 'Course Hero Unlock', description: 'Unlock a specific document or solution from Course Hero.', price: 40.00, iconKey: 'CourseHero', category: 'Unlocks' },
+    { id: 4, title: 'Chegg Unlock', description: 'Get step-by-step solutions unlocked from Chegg.', price: 20.00, iconKey: 'Chegg', category: 'Unlocks' },
+    { id: 5, title: 'Scribd Access', description: 'Full access to a specific Scribd book or document.', price: 25.00, iconKey: 'Scribd', category: 'Unlocks' },
+    { id: 6, title: 'Studypool Q&A', description: 'Unlock answers from Studypool experts.', price: 30.00, iconKey: 'Studypool', category: 'Unlocks' },
+    { id: 7, title: 'AI Content Refinement', description: 'Humanize AI generated text to bypass detectors and improve flow.', price: 50.00, iconKey: 'AI', category: 'Refinement' },
+    { id: 8, title: 'Proxy Services', description: 'Secure and anonymous proxy for research.', price: 600.00, iconKey: 'Proxy', category: 'Other' },
 ];
 
 const categories = ['All', 'Analysis', 'Unlocks', 'Refinement', 'Other'];
@@ -57,8 +57,8 @@ export default function Marketplace() {
                             key={cat}
                             onClick={() => setSelectedCategory(cat)}
                             className={`px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${selectedCategory === cat
-                                    ? 'bg-brand-600 dark:bg-brand-500 text-white shadow-md shadow-brand-500/20'
-                                    : 'bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/10'
+                                ? 'bg-brand-600 dark:bg-brand-500 text-white shadow-md shadow-brand-500/20'
+                                : 'bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/10'
                                 }`}
                         >
                             {cat}
@@ -158,7 +158,7 @@ export default function Marketplace() {
                             <div className="bg-gray-50 dark:bg-black/30 p-6 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-gray-200 dark:border-white/10">
                                 <div>
                                     <p className="text-sm text-gray-500 dark:text-gray-400">Estimated Total</p>
-                                    <p className="text-2xl font-bold text-gray-900 dark:text-white">${selectedService.price.toFixed(2)}</p>
+                                    <p className="text-2xl font-bold text-gray-900 dark:text-white">Ksh{selectedService.price.toFixed(2)}</p>
                                 </div>
                                 <div className="flex w-full sm:w-auto gap-3">
                                     <button

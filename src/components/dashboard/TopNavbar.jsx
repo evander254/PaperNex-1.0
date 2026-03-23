@@ -19,6 +19,7 @@ export default function TopNavbar({ setSidebarOpen, session, handleSignOut }) {
                 >
                     <Menu size={20} />
                 </button>
+                <img src="/logo.png" alt="PaperNex Logo" height={100} width={100} className="h-6 w-auto object-contain sm:hidden drop-shadow-sm dark:brightness-100" />
 
                 {/* Search */}
                 <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-gray-100 dark:bg-black/30 border border-transparent dark:border-white/5 rounded-lg focus-within:ring-2 focus-within:ring-brand-500/50 transition-all">

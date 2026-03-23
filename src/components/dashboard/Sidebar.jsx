@@ -1,8 +1,9 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Store, FileText, Wallet, User, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { LayoutDashboard, Store, FileText, Wallet, User, ChevronLeft, ChevronRight, X, Shield, LogOut } from 'lucide-react';
 import { motion } from 'framer-motion';
 import clsx from 'clsx';
+import { useAuth } from '../../context/AuthContext';
 
 const navItems = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
@@ -13,6 +14,9 @@ const navItems = [
 ];
 
 export default function Sidebar({ isOpen, isMobile, toggleSidebar, setSidebarOpen }) {
+    const { profile, signOut } = useAuth();
+    const isAdmin = profile?.role === 'admin';
+
     return (
         <>
             {/* Mobile Overlay */}
@@ -37,7 +41,7 @@ export default function Sidebar({ isOpen, isMobile, toggleSidebar, setSidebarOpe
                 )}
             >
                 {/* Header */}
-                <div className="h-16 flex items-center justify-between px-4 border-b border-gray-200 dark:border-white/10">
+                <div className="h-16 flex items-center justify-between px-4 border-b border-gray-200 dark:border-white/10 translate-y-[-4px]">
                     <div className={clsx("flex items-center overflow-hidden", !isOpen && !isMobile && "justify-center w-full")}>
                         {(isOpen || isMobile) ? (
                             <img src="/logo.png" alt="PaperNex Logo" className="h-8 md:h-9 w-auto object-contain drop-shadow-sm dark:brightness-100" />
@@ -63,7 +67,7 @@ export default function Sidebar({ isOpen, isMobile, toggleSidebar, setSidebarOpe
                 </div>
 
                 {/* Links */}
-                <nav className="flex-1 py-6 px-3 space-y-2 overflow-y-auto">
+                <nav className="flex-1 py-6 px-3 space-y-1 overflow-y-auto custom-scrollbar">
                     {navItems.map((item) => (
                         <NavLink
                             key={item.path}
@@ -80,10 +84,9 @@ export default function Sidebar({ isOpen, isMobile, toggleSidebar, setSidebarOpe
                             <item.icon size={20} className={clsx("min-w-[20px]", !isOpen && !isMobile && "mx-auto")} />
 
                             {(isOpen || isMobile) && (
-                                <span className="whitespace-nowrap">{item.name}</span>
+                                <span className="whitespace-nowrap text-sm">{item.name}</span>
                             )}
 
-                            {/* Tooltip for collapsed state */}
                             {!isOpen && !isMobile && (
                                 <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50">
                                     {item.name}
@@ -91,7 +94,54 @@ export default function Sidebar({ isOpen, isMobile, toggleSidebar, setSidebarOpe
                             )}
                         </NavLink>
                     ))}
+
+                    {/* Admin Divider */}
+                    {isAdmin && (
+                        <div className="pt-4 pb-2 px-3">
+                            <div className="h-px bg-gray-200 dark:bg-white/10 w-full" />
+                        </div>
+                    )}
+
+                    {/* Admin Link */}
+                    {isAdmin && (
+                        <NavLink
+                            to="/admin"
+                            onClick={() => isMobile && setSidebarOpen(false)}
+                            className={({ isActive }) => clsx(
+                                "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all group relative",
+                                isActive
+                                    ? "bg-purple-50 text-purple-600 dark:bg-purple-500/10 dark:text-purple-400 font-medium"
+                                    : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white"
+                            )}
+                        >
+                            <Shield size={20} className={clsx("min-w-[20px]", !isOpen && !isMobile && "mx-auto")} />
+                            {(isOpen || isMobile) && (
+                                <span className="whitespace-nowrap text-sm font-semibold">Admin Panel</span>
+                            )}
+                        </NavLink>
+                    )}
                 </nav>
+
+                {/* Footer Actions */}
+                <div className="p-3 border-t border-gray-200 dark:border-white/10">
+                    <button
+                        onClick={signOut}
+                        className={clsx(
+                            "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all group relative",
+                            !isOpen && !isMobile && "justify-center"
+                        )}
+                    >
+                        <LogOut size={20} className="min-w-[20px]" />
+                        {(isOpen || isMobile) && (
+                            <span className="whitespace-nowrap text-sm font-medium">Sign Out</span>
+                        )}
+                        {!isOpen && !isMobile && (
+                            <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50">
+                                Sign Out
+                            </div>
+                        )}
+                    </button>
+                </div>
             </motion.aside>
         </>
     );

@@ -1,32 +1,80 @@
-import React, { useState } from 'react';
-import { Search, Filter, X } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Search, Filter, X, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ServiceCard from '../../components/dashboard/ServiceCard';
-
-const servicesData = [
-    { id: 1, title: 'Turnitin AI Report', description: 'Get a comprehensive AI similarity report from Turnitin.', price: 100.00, iconKey: 'Turnitin', category: 'Analysis' },
-    { id: 2, title: 'Plagiarism Report', description: 'Check your document for unintentional plagiarism.', price: 50, iconKey: 'Plagiarism', category: 'Analysis' },
-    { id: 3, title: 'Course Hero Unlock', description: 'Unlock a specific document or solution from Course Hero.', price: 40.00, iconKey: 'CourseHero', category: 'Unlocks' },
-    { id: 4, title: 'Chegg Unlock', description: 'Get step-by-step solutions unlocked from Chegg.', price: 20.00, iconKey: 'Chegg', category: 'Unlocks' },
-    { id: 5, title: 'Scribd Access', description: 'Full access to a specific Scribd book or document.', price: 25.00, iconKey: 'Scribd', category: 'Unlocks' },
-    { id: 6, title: 'Studypool Q&A', description: 'Unlock answers from Studypool experts.', price: 30.00, iconKey: 'Studypool', category: 'Unlocks' },
-    { id: 7, title: 'AI Content Refinement', description: 'Humanize AI generated text to bypass detectors and improve flow.', price: 50.00, iconKey: 'AI', category: 'Refinement' },
-    { id: 8, title: 'Proxy Services', description: 'Secure and anonymous proxy for research.', price: 600.00, iconKey: 'Proxy', category: 'Other' },
-];
-
-const categories = ['All', 'Analysis', 'Unlocks', 'Refinement', 'Other'];
+import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../context/AuthContext';
 
 export default function Marketplace() {
+    const { user } = useAuth();
     const [search, setSearch] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('All');
     const [selectedService, setSelectedService] = useState(null);
+    const [services, setServices] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [details, setDetails] = useState('');
+    const [submitting, setSubmitting] = useState(false);
 
-    const filteredServices = servicesData.filter(service => {
+    // Derived categories
+    const categories = ['All', ...new Set(services.map(s => s.category).filter(Boolean))];
+
+    useEffect(() => {
+        const fetchServices = async () => {
+            try {
+                const { data, error } = await supabase.from('services').select('*').order('title');
+                if (error) throw error;
+                if (data) setServices(data);
+            } catch (err) {
+                console.error("Error fetching services:", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchServices();
+    }, []);
+
+    const filteredServices = services.filter(service => {
         const matchesCategory = selectedCategory === 'All' || service.category === selectedCategory;
-        const matchesSearch = service.title.toLowerCase().includes(search.toLowerCase()) ||
-            service.description.toLowerCase().includes(search.toLowerCase());
+        const matchesSearch = (service.title || '').toLowerCase().includes(search.toLowerCase()) ||
+            (service.description || '').toLowerCase().includes(search.toLowerCase());
         return matchesCategory && matchesSearch;
     });
+
+    const handleSubmit = async () => {
+        if (!selectedService || !user) return;
+        setSubmitting(true);
+        try {
+            const { error } = await supabase.from('requests').insert([
+                {
+                    user_id: user.id,
+                    service_id: selectedService.id,
+                    details: details,
+                    status: 'pending'
+                }
+            ]);
+
+            if (error) throw error;
+
+            // Close modal & reset
+            setSelectedService(null);
+            setDetails('');
+            alert('Request submitted successfully!');
+        } catch (err) {
+            console.error("Error submitting request:", err);
+            alert('Failed to submit request: ' + err.message);
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    if (loading) {
+        return (
+            <div className="flex justify-center items-center h-64">
+                <Loader2 className="w-8 h-8 text-brand-500 animate-spin" />
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6">
@@ -134,7 +182,7 @@ export default function Marketplace() {
 
                                 <div className="space-y-4">
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Upload File or Link</label>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Upload File or Link (Optional)</label>
                                         <div className="flex items-center justify-center w-full">
                                             <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-gray-300 dark:border-white/10 border-dashed rounded-xl cursor-pointer bg-gray-50 hover:bg-gray-100 dark:bg-black/20 dark:hover:bg-white/5 transition-colors">
                                                 <div className="flex flex-col items-center justify-center pt-5 pb-6">
@@ -148,6 +196,8 @@ export default function Marketplace() {
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Additional Instructions</label>
                                         <textarea
+                                            value={details}
+                                            onChange={(e) => setDetails(e.target.value)}
                                             className="w-full px-3 py-2 bg-white dark:bg-black/20 border border-gray-200 dark:border-white/5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50 transition-all text-gray-900 dark:text-white placeholder-gray-400 resize-none h-24"
                                             placeholder="E.g., Which specific questions to uncover?"
                                         ></textarea>
@@ -158,17 +208,22 @@ export default function Marketplace() {
                             <div className="bg-gray-50 dark:bg-black/30 p-6 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-gray-200 dark:border-white/10">
                                 <div>
                                     <p className="text-sm text-gray-500 dark:text-gray-400">Estimated Total</p>
-                                    <p className="text-2xl font-bold text-gray-900 dark:text-white">Ksh. {selectedService.price.toFixed(2)}</p>
+                                    <p className="text-2xl font-bold text-gray-900 dark:text-white">Ksh. {selectedService.price?.toFixed(2)}</p>
                                 </div>
                                 <div className="flex w-full sm:w-auto gap-3">
                                     <button
                                         onClick={() => setSelectedService(null)}
+                                        disabled={submitting}
                                         className="flex-1 sm:flex-none px-4 py-2 bg-transparent text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-white/10 rounded-xl font-medium hover:bg-gray-100 dark:hover:bg-white/5 transition-colors text-sm"
                                     >
                                         Cancel
                                     </button>
-                                    <button className="flex-1 sm:flex-none px-6 py-2 bg-brand-600 text-white rounded-xl font-medium hover:bg-brand-500 shadow-lg shadow-brand-500/20 transition-all text-sm">
-                                        Submit Request
+                                    <button
+                                        onClick={handleSubmit}
+                                        disabled={submitting}
+                                        className="flex-1 sm:flex-none px-6 py-2 flex items-center justify-center bg-brand-600 text-white rounded-xl font-medium hover:bg-brand-500 shadow-lg shadow-brand-500/20 transition-all text-sm disabled:opacity-70"
+                                    >
+                                        {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Submit Request'}
                                     </button>
                                 </div>
                             </div>

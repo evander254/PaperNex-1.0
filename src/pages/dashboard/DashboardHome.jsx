@@ -1,17 +1,67 @@
-import React from 'react';
-import { useOutletContext, Link } from 'react-router-dom';
-import { Send, Store, Wallet, Clock, CheckCircle, ArrowRight } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Send, Store, Wallet, Clock, CheckCircle, ArrowRight, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useAuth } from '../../context/AuthContext';
+import { supabase } from '../../lib/supabase';
 
 export default function DashboardHome() {
-    const { session } = useOutletContext();
-    const email = session?.user?.email || 'User';
+    const { user, profile } = useAuth();
+    const [stats, setStats] = useState([
+        { title: 'Active Requests', value: '0', icon: Clock, color: 'text-brand-500', bg: 'bg-brand-500/10' },
+        { title: 'Completed Orders', value: '0', icon: CheckCircle, color: 'text-green-500', bg: 'bg-green-500/10' },
+        { title: 'Wallet Balance', value: 'Ksh. 0.00', icon: Wallet, color: 'text-blue-500', bg: 'bg-blue-500/10' },
+    ]);
+    const [recentRequests, setRecentRequests] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-    const stats = [
-        { title: 'Active Requests', value: '3', icon: Clock, color: 'text-brand-500', bg: 'bg-brand-500/10' },
-        { title: 'Completed Orders', value: '12', icon: CheckCircle, color: 'text-green-500', bg: 'bg-green-500/10' },
-        { title: 'Wallet Balance', value: '$45.00', icon: Wallet, color: 'text-blue-500', bg: 'bg-blue-500/10' },
-    ];
+    useEffect(() => {
+        if (!user) return;
+
+        const fetchData = async () => {
+            try {
+                // Fetch stats
+                const [activeReq, completedReq, walletData] = await Promise.all([
+                    supabase.from('requests').select('*', { count: 'exact', head: true }).eq('user_id', user.id).neq('status', 'completed'),
+                    supabase.from('requests').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('status', 'completed'),
+                    supabase.from('wallets').select('balance').eq('user_id', user.id).single()
+                ]);
+
+                setStats([
+                    { title: 'Active Requests', value: activeReq.count?.toString() || '0', icon: Clock, color: 'text-brand-500', bg: 'bg-brand-500/10' },
+                    { title: 'Completed Orders', value: completedReq.count?.toString() || '0', icon: CheckCircle, color: 'text-green-500', bg: 'bg-green-500/10' },
+                    { title: 'Wallet Balance', value: `Ksh. ${walletData.data?.balance?.toFixed(2) || '0.00'}`, icon: Wallet, color: 'text-blue-500', bg: 'bg-blue-500/10' },
+                ]);
+
+                // Fetch recent requests
+                const { data } = await supabase
+                    .from('requests')
+                    .select('*, services(title)')
+                    .eq('user_id', user.id)
+                    .order('created_at', { ascending: false })
+                    .limit(3);
+
+                if (data) setRecentRequests(data);
+            } catch (err) {
+                console.error("Error fetching dashboard data:", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchData();
+    }, [user]);
+
+    const email = user?.email || 'User';
+    const displayName = profile?.first_name || email.split('@')[0];
+
+    if (loading) {
+        return (
+            <div className="flex justify-center items-center h-64">
+                <Loader2 className="w-8 h-8 text-brand-500 animate-spin" />
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6 sm:space-y-8 pb-10">
@@ -23,7 +73,7 @@ export default function DashboardHome() {
             >
                 <div>
                     <h1 className="text-2xl sm:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-400">
-                        Welcome back, {email.split('@')[0]}
+                        Welcome back, {displayName}
                     </h1>
                     <p className="text-gray-500 dark:text-gray-400 mt-1">Here's what's happening with your account today.</p>
                 </div>
@@ -48,7 +98,7 @@ export default function DashboardHome() {
                     <div key={index} className="card-panel p-5 sm:p-6 flex items-center justify-between group">
                         <div>
                             <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{stat.title}</p>
-                            <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mt-1 group-hover:text-brand-500 transition-colors">
+                            <h3 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mt-1 group-hover:text-brand-500 transition-colors">
                                 {stat.value}
                             </h3>
                         </div>
@@ -96,7 +146,7 @@ export default function DashboardHome() {
                 </motion.div>
             </div>
 
-            {/* Recent Activity minimal section */}
+            {/* Recent Activity */}
             <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -108,24 +158,31 @@ export default function DashboardHome() {
                     <Link to="/dashboard/requests" className="text-sm text-brand-600 dark:text-brand-400 hover:underline">View All</Link>
                 </div>
 
-                <div className="space-y-4">
-                    {[1, 2].map((_, i) => (
-                        <div key={i} className="flex items-center gap-4 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-white/5 transition-colors border border-transparent dark:hover:border-white/5">
+                <div className="divide-y divide-gray-100 dark:divide-white/5">
+                    {recentRequests.length > 0 ? recentRequests.map((req, i) => (
+                        <div key={req.id} className="flex items-center gap-4 py-4 first:pt-0 last:pb-0">
                             <div className="w-10 h-10 rounded-full bg-brand-500/10 text-brand-500 flex items-center justify-center shrink-0">
                                 <Send size={20} />
                             </div>
                             <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-gray-900 dark:text-white truncate">Turnitin AI Report Request</p>
-                                <p className="text-xs text-gray-500 dark:text-gray-400">Document analysis in progress...</p>
+                                <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{req.services?.title}</p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{req.details || 'No details provided'}</p>
                             </div>
                             <div className="text-right shrink-0">
-                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-500/10 dark:text-amber-400">
-                                    Pending
+                                <span className={`inline-flex items-center px-2 py-1 rounded-full text-[10px] font-medium ${req.status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-500/10 dark:text-green-400' :
+                                        req.status === 'in_progress' ? 'bg-blue-100 text-blue-800 dark:bg-blue-500/10 dark:text-blue-400' :
+                                            'bg-amber-100 text-amber-800 dark:bg-amber-500/10 dark:text-amber-400'
+                                    }`}>
+                                    {req.status?.replace('_', ' ')}
                                 </span>
-                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">2 hours ago</p>
+                                <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1">{new Date(req.created_at).toLocaleDateString()}</p>
                             </div>
                         </div>
-                    ))}
+                    )) : (
+                        <div className="text-center py-6">
+                            <p className="text-sm text-gray-500 dark:text-gray-400">No recent activity found.</p>
+                        </div>
+                    )}
                 </div>
             </motion.div>
         </div>

@@ -6,25 +6,54 @@ import Marketplace from './pages/dashboard/Marketplace';
 import MyRequests from './pages/dashboard/MyRequests';
 import Wallet from './pages/dashboard/Wallet';
 import Profile from './pages/dashboard/Profile';
+import AdminLayout from './components/admin/AdminLayout';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminRequests from './pages/admin/AdminRequests';
+import AdminServices from './pages/admin/AdminServices';
+import AdminUsers from './pages/admin/AdminUsers';
+import AdminTransactions from './pages/admin/AdminTransactions';
+import SetupProfile from './pages/auth/SetupProfile';
+import { AuthProvider } from './context/AuthContext';
+import { ProtectedRoute } from './components/ProtectedRoute';
 
 function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<LandingPage />} />
+      <AuthProvider>
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
 
-        {/* Dashboard Routes wrapper */}
-        <Route path="/dashboard" element={<DashboardLayout />}>
-          <Route index element={<DashboardHome />} />
-          <Route path="marketplace" element={<Marketplace />} />
-          <Route path="requests" element={<MyRequests />} />
-          <Route path="wallet" element={<Wallet />} />
-          <Route path="profile" element={<Profile />} />
-        </Route>
+          {/* Setup Profile Route - Must be logged in, but skips completion check */}
+          <Route element={<ProtectedRoute skipProfileCheck={true} />}>
+            <Route path="/setup-profile" element={<SetupProfile />} />
+          </Route>
 
-        {/* Fallback */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+          {/* Protected Dashboard Routes */}
+          <Route element={<ProtectedRoute />}>
+            <Route path="/dashboard" element={<DashboardLayout />}>
+              <Route index element={<DashboardHome />} />
+              <Route path="marketplace" element={<Marketplace />} />
+              <Route path="requests" element={<MyRequests />} />
+              <Route path="wallet" element={<Wallet />} />
+              <Route path="profile" element={<Profile />} />
+            </Route>
+          </Route>
+
+          {/* Admin Routes */}
+          <Route element={<ProtectedRoute requiredRole="admin" />}>
+            <Route path="/admin" element={<AdminLayout />}>
+              <Route index element={<AdminDashboard />} />
+              <Route path="requests" element={<AdminRequests />} />
+              <Route path="services" element={<AdminServices />} />
+              <Route path="users" element={<AdminUsers />} />
+              <Route path="transactions" element={<AdminTransactions />} />
+            </Route>
+          </Route>
+
+          {/* Fallback */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </AuthProvider>
     </BrowserRouter>
   );
 }

@@ -1,45 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Outlet, useNavigate } from 'react-router-dom';
+import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import TopNavbar from './TopNavbar';
-import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../context/AuthContext';
 import { motion } from 'framer-motion';
 
 export default function DashboardLayout() {
-    const [session, setSession] = useState(null);
-    const [loading, setLoading] = useState(true);
+    const { session, signOut, loading, user } = useAuth();
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [isMobile, setIsMobile] = useState(false);
-    const navigate = useNavigate();
 
     useEffect(() => {
-        // Session fetching
-        let mounted = true;
-
-        async function checkAuth() {
-            const { data: { session: currentSession } } = await supabase.auth.getSession();
-            if (mounted) {
-                if (!currentSession) {
-                    navigate('/');
-                } else {
-                    setSession(currentSession);
-                }
-                setLoading(false);
-            }
-        }
-
-        checkAuth();
-
-        const { data: authListener } = supabase.auth.onAuthStateChange(
-            (event, session) => {
-                if (!session) {
-                    navigate('/');
-                } else {
-                    setSession(session);
-                }
-            }
-        );
-
         // Responsive listening
         const mql = window.matchMedia('(max-width: 768px)');
         const handleResize = (e) => {
@@ -57,17 +28,8 @@ export default function DashboardLayout() {
         }
 
         mql.addEventListener('change', handleResize);
-
-        return () => {
-            mounted = false;
-            authListener.subscription.unsubscribe();
-            mql.removeEventListener('change', handleResize);
-        };
-    }, [navigate]);
-
-    const handleSignOut = async () => {
-        await supabase.auth.signOut();
-    };
+        return () => mql.removeEventListener('change', handleResize);
+    }, []);
 
     const toggleSidebar = () => {
         setSidebarOpen(!sidebarOpen);
@@ -81,10 +43,10 @@ export default function DashboardLayout() {
         );
     }
 
-    if (!session) return null;
+    if (!user) return null;
 
     return (
-        <div className="min-h-screen flex text-gray-900 dark:text-white transition-colors duration-300 overflow-hidden relative">
+        <div className="min-h-screen flex text-gray-900 dark:text-white transition-colors duration-300 overflow-hidden relative font-sans">
             <Sidebar
                 isOpen={sidebarOpen}
                 isMobile={isMobile}
@@ -99,7 +61,7 @@ export default function DashboardLayout() {
                 <TopNavbar
                     setSidebarOpen={setSidebarOpen}
                     session={session}
-                    handleSignOut={handleSignOut}
+                    handleSignOut={signOut}
                 />
 
                 <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 custom-scrollbar">
@@ -109,7 +71,7 @@ export default function DashboardLayout() {
                         transition={{ duration: 0.3 }}
                         className="max-w-7xl mx-auto h-full"
                     >
-                        <Outlet context={{ session }} />
+                        <Outlet />
                     </motion.div>
                 </div>
             </main>

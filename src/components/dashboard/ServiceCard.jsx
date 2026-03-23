@@ -47,7 +47,7 @@ export default function ServiceCard({ service, onSelect }) {
             <div className="p-6 pt-0 mt-auto relative z-10 flex items-center justify-between">
                 <div>
                     <p className="text-xs text-gray-400 dark:text-gray-500">Starting at</p>
-                    <p className="text-lg font-bold text-gray-900 dark:text-white">${service.price.toFixed(2)}</p>
+                    <p className="text-lg font-bold text-gray-900 dark:text-white">Ksh. {service.price.toFixed(2)}</p>
                 </div>
                 <button
                     className="bg-gray-100 text-gray-900 dark:bg-white/10 dark:text-white hover:bg-brand-600 hover:text-white dark:hover:bg-brand-500 px-4 py-2 rounded-lg text-sm font-semibold transition-all shadow-sm group-hover:shadow-brand-500/25"

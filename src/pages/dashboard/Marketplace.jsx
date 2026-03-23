@@ -158,7 +158,7 @@ export default function Marketplace() {
                             <div className="bg-gray-50 dark:bg-black/30 p-6 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-gray-200 dark:border-white/10">
                                 <div>
                                     <p className="text-sm text-gray-500 dark:text-gray-400">Estimated Total</p>
-                                    <p className="text-2xl font-bold text-gray-900 dark:text-white">Ksh{selectedService.price.toFixed(2)}</p>
+                                    <p className="text-2xl font-bold text-gray-900 dark:text-white">Ksh. {selectedService.price.toFixed(2)}</p>
                                 </div>
                                 <div className="flex w-full sm:w-auto gap-3">
                                     <button

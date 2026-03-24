@@ -39,9 +39,34 @@ export default function AdminTransactions() {
     }, []);
 
     const handleAction = async (tx, status) => {
+        if (actionLoading) return;
         setActionLoading(tx.id);
+
         try {
-            // 1. Update status
+            // 0. Double-check status from DB
+            const { data: freshTx, error: fetchError } = await supabase
+                .from('transactions')
+                .select('status')
+                .eq('id', tx.id)
+                .single();
+
+            if (fetchError) throw fetchError;
+            if (freshTx.status !== 'pending') {
+                alert('This transaction has already been processed.');
+                await fetchTransactions();
+                return;
+            }
+
+            // 1. Fetch current balance *before* status move
+            const { data: initialBalanceData } = await supabase
+                .from('balances')
+                .select('balance')
+                .eq('user_id', tx.user_id)
+                .maybeSingle();
+
+            const initialBalance = initialBalanceData?.balance || 0;
+
+            // 2. Update status
             const { error: txError } = await supabase
                 .from('transactions')
                 .update({ status })
@@ -49,28 +74,42 @@ export default function AdminTransactions() {
 
             if (txError) throw txError;
 
-            // 2. Update balance if approved deposit
+            // 3. Update balance if approved deposit
             if (status === 'approved' && tx.type === 'deposit') {
-                const { data: balanceData, error: balanceFetchError } = await supabase
+                // Wait for potential DB trigger
+                await new Promise(r => setTimeout(r, 500));
+
+                const { data: checkBalanceData } = await supabase
                     .from('balances')
                     .select('balance')
                     .eq('user_id', tx.user_id)
-                    .single();
+                    .maybeSingle();
 
-                if (balanceFetchError && balanceFetchError.code !== 'PGRST116') throw balanceFetchError;
+                const currentBalanceAfterStatusChange = checkBalanceData?.balance || 0;
 
-                const currentBalance = balanceData?.balance || 0;
-                const newBalance = currentBalance + tx.amount;
-
-                const { error: balanceUpdateError } = await supabase
-                    .from('balances')
-                    .upsert({
-                        user_id: tx.user_id,
-                        balance: newBalance,
-                        updated_at: new Date().toISOString()
-                    });
-
-                if (balanceUpdateError) throw balanceUpdateError;
+                // TRIGGER DETECTION
+                if (currentBalanceAfterStatusChange >= initialBalance + Number(tx.amount)) {
+                    console.log("Balance auto-updated by DB trigger.");
+                } else {
+                    const newBalance = initialBalance + Number(tx.amount);
+                    if (checkBalanceData) {
+                        await supabase
+                            .from('balances')
+                            .update({
+                                balance: newBalance,
+                                updated_at: new Date().toISOString()
+                            })
+                            .eq('user_id', tx.user_id);
+                    } else {
+                        await supabase
+                            .from('balances')
+                            .insert({
+                                user_id: tx.user_id,
+                                balance: newBalance,
+                                updated_at: new Date().toISOString()
+                            });
+                    }
+                }
                 alert(`Transaction approved. Ksh. ${tx.amount} added to user balance.`);
             }
 

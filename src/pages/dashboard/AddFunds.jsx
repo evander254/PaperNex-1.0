@@ -32,7 +32,7 @@ export default function AddFunds() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!amount || !phoneNumber) return;
+        if (!amount || !phoneNumber || loading) return;
 
         setLoading(true);
         try {
@@ -44,6 +44,7 @@ export default function AddFunds() {
                     type: 'deposit',
                     status: 'pending',
                     phonenumber: phoneNumber,
+                    created_at: new Date().toISOString()
                 });
 
             if (error) throw error;

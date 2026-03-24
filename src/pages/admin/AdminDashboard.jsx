@@ -46,9 +46,37 @@ export default function AdminDashboard() {
         }
     };
 
+    const [actionLoading, setActionLoading] = useState(null);
+
     const handleAction = async (tx, status) => {
+        if (actionLoading) return;
+        setActionLoading(tx.id);
+
         try {
-            // 1. Update the transaction status
+            // 0. Double-check status from database
+            const { data: freshTx, error: fetchError } = await supabase
+                .from('transactions')
+                .select('status')
+                .eq('id', tx.id)
+                .single();
+
+            if (fetchError) throw fetchError;
+            if (freshTx.status !== 'pending') {
+                alert('This transaction has already been processed.');
+                fetchPending();
+                return;
+            }
+
+            // 1. Fetch current balance *before* any changes
+            const { data: initialBalanceData } = await supabase
+                .from('balances')
+                .select('balance')
+                .eq('user_id', tx.user_id)
+                .maybeSingle();
+
+            const initialBalance = initialBalanceData?.balance || 0;
+
+            // 2. Update the transaction status
             const { error: txError } = await supabase
                 .from('transactions')
                 .update({ status })
@@ -56,36 +84,43 @@ export default function AdminDashboard() {
 
             if (txError) throw txError;
 
-            // 2. If approved and it's a deposit, we MUST update the user's balance
+            // 3. If approved and it's a deposit, update the balance BUT check if it already changed (Trigger)
             if (status === 'approved' && tx.type === 'deposit') {
-                // Fetch current balance first
-                const { data: balanceData, error: balanceFetchError } = await supabase
+                // Wait a tiny bit for potential DB trigger
+                await new Promise(r => setTimeout(r, 500));
+
+                const { data: checkBalanceData } = await supabase
                     .from('balances')
                     .select('balance')
                     .eq('user_id', tx.user_id)
-                    .single();
+                    .maybeSingle();
 
-                if (balanceFetchError && balanceFetchError.code !== 'PGRST116') throw balanceFetchError;
+                const currentBalanceAfterStatusChange = checkBalanceData?.balance || 0;
 
-                const currentBalance = balanceData?.balance || 0;
-                const newBalance = currentBalance + tx.amount;
+                // If balance already increased by the amount, a DB trigger is active
+                if (currentBalanceAfterStatusChange >= initialBalance + Number(tx.amount)) {
+                    console.log("Balance already updated via DB trigger.");
+                } else {
+                    // No trigger detected, update manually
+                    const newBalance = initialBalance + Number(tx.amount);
 
-                const { error: balanceUpdateError } = await supabase
-                    .from('balances')
-                    .upsert({
-                        user_id: tx.user_id,
-                        balance: newBalance,
-                        updated_at: new Date().toISOString()
-                    });
-
-                if (balanceUpdateError) throw balanceUpdateError;
-                alert(`Transaction approved. Ksh. ${tx.amount} has been added to user's balance.`);
+                    if (checkBalanceData) {
+                        await supabase
+                            .from('balances')
+                            .update({ balance: newBalance, updated_at: new Date().toISOString() })
+                            .eq('user_id', tx.user_id);
+                    } else {
+                        await supabase
+                            .from('balances')
+                            .insert({ user_id: tx.user_id, balance: newBalance, updated_at: new Date().toISOString() });
+                    }
+                }
+                alert(`Transaction approved. Ksh. ${tx.amount} added to user's balance.`);
             } else if (status === 'rejected') {
                 alert('Transaction rejected.');
             }
 
             // Refresh data
-            fetchPending();
             const [usersRes, requestsRes, servicesRes, txRes] = await Promise.all([
                 supabase.from('profiles').select('id', { count: 'exact', head: true }),
                 supabase.from('requests').select('id', { count: 'exact', head: true }),
@@ -102,6 +137,8 @@ export default function AdminDashboard() {
         } catch (err) {
             console.error("Error updating transaction:", err);
             alert("Failed to update transaction: " + err.message);
+        } finally {
+            setActionLoading(null);
         }
     };
 
@@ -220,18 +257,20 @@ export default function AdminDashboard() {
                                         {tx.status === 'pending' ? (
                                             <div className="flex justify-end gap-2">
                                                 <button
+                                                    disabled={actionLoading === tx.id}
                                                     onClick={() => handleAction(tx, 'approved')}
-                                                    className="p-1.5 bg-green-500/10 text-green-500 hover:bg-green-500/20 rounded-lg transition-all"
+                                                    className="p-1.5 bg-green-500/10 text-green-500 hover:bg-green-500/20 rounded-lg transition-all disabled:opacity-50"
                                                     title="Approve"
                                                 >
-                                                    <CheckCircle size={16} />
+                                                    {actionLoading === tx.id ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle size={16} />}
                                                 </button>
                                                 <button
+                                                    disabled={actionLoading === tx.id}
                                                     onClick={() => handleAction(tx, 'rejected')}
-                                                    className="p-1.5 bg-red-500/10 text-red-500 hover:bg-red-500/20 rounded-lg transition-all"
+                                                    className="p-1.5 bg-red-500/10 text-red-500 hover:bg-red-500/20 rounded-lg transition-all disabled:opacity-50"
                                                     title="Reject"
                                                 >
-                                                    <XCircle size={16} />
+                                                    {actionLoading === tx.id ? <Loader2 size={16} className="animate-spin" /> : <XCircle size={16} />}
                                                 </button>
                                             </div>
                                         ) : (

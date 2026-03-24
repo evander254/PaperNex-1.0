@@ -14,11 +14,28 @@ export default function Marketplace() {
     const [loading, setLoading] = useState(true);
     const [details, setDetails] = useState('');
     const [submitting, setSubmitting] = useState(false);
+    const [balance, setBalance] = useState(0);
 
     // Derived categories
     const categories = ['All', ...new Set(services.map(s => s.category).filter(Boolean))];
 
+    const fetchBalance = async () => {
+        if (!user) return;
+        try {
+            const { data, error } = await supabase
+                .from('balances')
+                .select('balance')
+                .eq('user_id', user.id)
+                .single();
+            if (error && error.code !== 'PGRST116') throw error;
+            if (data) setBalance(data.balance);
+        } catch (err) {
+            console.error("Error fetching balance:", err);
+        }
+    };
+
     useEffect(() => {
+        fetchBalance();
         const fetchServices = async () => {
             try {
                 const { data, error } = await supabase.from('services').select('*').order('name');
@@ -32,7 +49,17 @@ export default function Marketplace() {
         };
 
         fetchServices();
-    }, []);
+
+        // Subscription for balance
+        const balanceSub = supabase
+            .channel('balance_update')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'balances', filter: `user_id=eq.${user.id}` }, () => fetchBalance())
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(balanceSub);
+        };
+    }, [user]);
 
     const filteredServices = services.filter(service => {
         const matchesCategory = selectedCategory === 'All' || service.category === selectedCategory;
@@ -43,26 +70,62 @@ export default function Marketplace() {
 
     const handleSubmit = async () => {
         if (!selectedService || !user) return;
+
+        // 1. Check Balance
+        if (balance < selectedService.price) {
+            alert(`Insufficient balance. You need Ksh. ${selectedService.price.toFixed(2)} but your current balance is Ksh. ${balance.toFixed(2)}.`);
+            window.location.href = '/dashboard/add-funds';
+            return;
+        }
+
         setSubmitting(true);
         try {
-            const { error } = await supabase.from('requests').insert([
+            // 2. Perform Deduction & Request Creation in a transaction (simulated with individual calls or ideally RPC)
+            // For now, we'll use a purchase transaction to record the cost.
+
+            const { data: requestData, error: requestError } = await supabase.from('requests').insert([
                 {
                     user_id: user.id,
                     service_id: selectedService.id,
                     details: details,
                     status: 'pending'
                 }
+            ]).select().single();
+
+            if (requestError) throw requestError;
+
+            // 3. Create a transaction record for the purchase
+            const { error: txError } = await supabase.from('transactions').insert([
+                {
+                    user_id: user.id,
+                    amount: selectedService.price,
+                    type: 'purchase',
+                    status: 'completed',
+                    description: `Purchase: ${selectedService.name}`
+                }
             ]);
 
-            if (error) throw error;
+            if (txError) throw txError;
+
+            // 4. Update balance (Atomic decrement)
+            const { error: balanceError } = await supabase
+                .from('balances')
+                .update({
+                    balance: balance - selectedService.price,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('user_id', user.id);
+
+            if (balanceError) throw balanceError;
 
             // Close modal & reset
             setSelectedService(null);
             setDetails('');
-            alert('Request submitted successfully!');
+            alert('Service purchased and request submitted successfully!');
+            fetchBalance();
         } catch (err) {
             console.error("Error submitting request:", err);
-            alert('Failed to submit request: ' + err.message);
+            alert('Failed to process purchase: ' + err.message);
         } finally {
             setSubmitting(false);
         }

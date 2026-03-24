@@ -34,13 +34,13 @@ export default function AdminUsers() {
 
             if (profileError) throw profileError;
 
-            // 2. Fetch all wallets
+            // 2. Fetch all balances
             const { data: wallets, error: walletError } = await supabase
-                .from('wallets')
+                .from('balances')
                 .select('user_id, balance');
 
             if (walletError && walletError.code !== 'PGRST116') {
-                console.error("Error fetching wallets:", walletError);
+                console.error("Error fetching balances:", walletError);
             }
 
             // 3. Combine data
@@ -221,8 +221,8 @@ export default function AdminUsers() {
 
                                         <td className="px-6 py-5 whitespace-nowrap text-center">
                                             <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all ${user.role === 'admin'
-                                                    ? 'bg-purple-500/10 text-purple-400 border-purple-500/20 shadow-[0_0_15px_-5px_rgba(168,85,247,0.4)]'
-                                                    : 'bg-brand-500/10 text-brand-400 border-brand-500/20'
+                                                ? 'bg-purple-500/10 text-purple-400 border-purple-500/20 shadow-[0_0_15px_-5px_rgba(168,85,247,0.4)]'
+                                                : 'bg-brand-500/10 text-brand-400 border-brand-500/20'
                                                 }`}>
                                                 {user.role === 'admin' ? <ShieldAlert size={12} className="shrink-0" /> : <Users size={12} className="shrink-0" />}
                                                 {user.role}

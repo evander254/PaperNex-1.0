@@ -15,15 +15,15 @@ export default function Wallet() {
 
         const fetchData = async () => {
             try {
-                // Fetch wallet
-                const { data: walletData, error: walletError } = await supabase
-                    .from('wallets')
+                // Fetch balance
+                const { data: balanceData, error: balanceError } = await supabase
+                    .from('balances')
                     .select('*')
                     .eq('user_id', user.id)
                     .single();
 
-                if (walletError && walletError.code !== 'PGRST116') throw walletError;
-                if (walletData) setWallet(walletData);
+                if (balanceError && balanceError.code !== 'PGRST116') throw balanceError;
+                if (balanceData) setWallet(balanceData);
 
                 // Fetch transactions
                 const { data: txData, error: txError } = await supabase
@@ -35,7 +35,7 @@ export default function Wallet() {
                 if (txError) throw txError;
                 if (txData) setTransactions(txData);
             } catch (err) {
-                console.error("Error fetching wallet data:", err);
+                console.error("Error fetching balance data:", err);
             } finally {
                 setLoading(false);
             }
@@ -44,9 +44,9 @@ export default function Wallet() {
         fetchData();
 
         // Subscriptions
-        const walletSub = supabase
-            .channel('wallet_changes')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'wallets', filter: `user_id=eq.${user.id}` }, () => fetchData())
+        const balanceSub = supabase
+            .channel('balance_changes')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'balances', filter: `user_id=eq.${user.id}` }, () => fetchData())
             .subscribe();
 
         const txSub = supabase
@@ -55,7 +55,7 @@ export default function Wallet() {
             .subscribe();
 
         return () => {
-            supabase.removeChannel(walletSub);
+            supabase.removeChannel(balanceSub);
             supabase.removeChannel(txSub);
         };
     }, [user]);
@@ -105,7 +105,10 @@ export default function Wallet() {
                     </div>
 
                     <div className="relative z-10 flex gap-3">
-                        <button className="flex items-center gap-2 bg-white text-brand-700 hover:bg-gray-50 px-5 py-2.5 rounded-xl font-semibold transition-colors shadow-lg text-sm sm:text-base">
+                        <button
+                            onClick={() => window.location.href = '/dashboard/add-funds'}
+                            className="flex items-center gap-2 bg-white text-brand-700 hover:bg-gray-50 px-5 py-2.5 rounded-xl font-semibold transition-colors shadow-lg text-sm sm:text-base"
+                        >
                             <Plus size={18} /> Add Funds
                         </button>
                     </div>

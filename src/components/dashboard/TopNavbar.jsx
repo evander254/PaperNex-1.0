@@ -1,12 +1,40 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Menu, Search, Bell, LogOut, Settings, User } from 'lucide-react';
 import ThemeToggle from '../ui/ThemeToggle';
 import { motion, AnimatePresence } from 'framer-motion';
+import { supabase } from '../../lib/supabase';
+import NotificationPanel from './NotificationPanel';
 
 export default function TopNavbar({ setSidebarOpen, session, handleSignOut }) {
     const [dropdownOpen, setDropdownOpen] = useState(false);
+    const [notificationsOpen, setNotificationsOpen] = useState(false);
+    const [unreadCount, setUnreadCount] = useState(0);
     const email = session?.user?.email || 'user@example.com';
+    const userId = session?.user?.id;
     const initial = email.charAt(0).toUpperCase();
+
+    const fetchUnreadCount = async () => {
+        if (!userId) return;
+        try {
+            const { count, error } = await supabase
+                .from('notifications')
+                .select('*', { count: 'exact', head: true })
+                .eq('user_id', userId)
+                .eq('read', false);
+            if (!error) setUnreadCount(count || 0);
+        } catch (err) {
+            console.error("Error fetching unread count:", err);
+        }
+    };
+
+    useEffect(() => {
+        fetchUnreadCount();
+        const sub = supabase
+            .channel('unread_notifications')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` }, () => fetchUnreadCount())
+            .subscribe();
+        return () => supabase.removeChannel(sub);
+    }, [userId]);
 
     return (
         <header className="h-16 flex items-center justify-between px-4 sm:px-6 border-b border-gray-200 dark:border-white/10 bg-white/80 dark:bg-[#0a0720]/80 backdrop-blur-md sticky top-0 z-30">
@@ -36,10 +64,23 @@ export default function TopNavbar({ setSidebarOpen, session, handleSignOut }) {
             <div className="flex items-center gap-2 sm:gap-4 relative">
                 <ThemeToggle />
 
-                <button className="p-2 rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-white/5 transition-colors relative">
-                    <Bell size={20} />
-                    <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-500 border-2 border-white dark:border-[#0a0720]"></span>
-                </button>
+                <div className="relative">
+                    <button
+                        onClick={() => setNotificationsOpen(!notificationsOpen)}
+                        className="p-2 rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-white/5 transition-colors relative"
+                    >
+                        <Bell size={20} />
+                        {unreadCount > 0 && (
+                            <span className="absolute top-1 right-1 w-4 h-4 bg-brand-500 text-white text-[8px] font-bold rounded-full border-2 border-white dark:border-[#0a0720] flex items-center justify-center">
+                                {unreadCount > 9 ? '9+' : unreadCount}
+                            </span>
+                        )}
+                    </button>
+                    <NotificationPanel
+                        isOpen={notificationsOpen}
+                        onClose={() => setNotificationsOpen(false)}
+                    />
+                </div>
 
                 <div className="relative">
                     <button

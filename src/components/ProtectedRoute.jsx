@@ -20,10 +20,7 @@ export const ProtectedRoute = ({ requiredRole, skipProfileCheck = false }) => {
     }
 
     // Check if profile is complete (only if not skipping check)
-    if (!skipProfileCheck && (!profile?.first_name || !profile?.last_name)) {
-        // Only redirect if they are not already on the setup page
-        // (This is redundant if /setup-profile is not wrapped in this ProtectedRoute, 
-        // but it's safer)
+    if (!skipProfileCheck && (!profile?.first_name || !profile?.last_name || !profile?.phonenumber)) {
         return <Navigate to="/setup-profile" replace />;
     }
 

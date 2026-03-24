@@ -24,7 +24,7 @@ export default function DashboardHome() {
                 const [activeReq, completedReq, walletData] = await Promise.all([
                     supabase.from('requests').select('*', { count: 'exact', head: true }).eq('user_id', user.id).neq('status', 'completed'),
                     supabase.from('requests').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('status', 'completed'),
-                    supabase.from('wallets').select('balance').eq('user_id', user.id).single()
+                    supabase.from('balances').select('balance').eq('user_id', user.id).single()
                 ]);
 
                 setStats([
@@ -170,8 +170,8 @@ export default function DashboardHome() {
                             </div>
                             <div className="text-right shrink-0">
                                 <span className={`inline-flex items-center px-2 py-1 rounded-full text-[10px] font-medium ${req.status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-500/10 dark:text-green-400' :
-                                        req.status === 'in_progress' ? 'bg-blue-100 text-blue-800 dark:bg-blue-500/10 dark:text-blue-400' :
-                                            'bg-amber-100 text-amber-800 dark:bg-amber-500/10 dark:text-amber-400'
+                                    req.status === 'in_progress' ? 'bg-blue-100 text-blue-800 dark:bg-blue-500/10 dark:text-blue-400' :
+                                        'bg-amber-100 text-amber-800 dark:bg-amber-500/10 dark:text-amber-400'
                                     }`}>
                                     {req.status?.replace('_', ' ')}
                                 </span>

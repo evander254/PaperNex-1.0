@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { User, Save, Loader2, Sparkles } from 'lucide-react';
+import { User, Save, Loader2, Sparkles, Phone } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
 
@@ -9,25 +9,27 @@ export default function SetupProfile() {
     const { user, profile, fetchProfile } = useAuth();
     const [firstName, setFirstName] = useState('');
     const [lastName, setLastName] = useState('');
+    const [phoneNumber, setPhoneNumber] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const navigate = useNavigate();
 
     useEffect(() => {
         if (profile) {
-            // If profile is already complete, redirect to dashboard
-            if (profile.first_name && profile.last_name) {
+            // Check if profile is complete (now includes phonenumber)
+            if (profile.first_name && profile.last_name && profile.phonenumber) {
                 navigate('/dashboard', { replace: true });
             } else {
                 setFirstName(profile.first_name || '');
                 setLastName(profile.last_name || '');
+                setPhoneNumber(profile.phonenumber || '');
             }
         }
     }, [profile, navigate]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!firstName || !lastName) {
+        if (!firstName || !lastName || !phoneNumber) {
             setError('Please fill in all fields.');
             return;
         }
@@ -36,40 +38,19 @@ export default function SetupProfile() {
         setError(null);
 
         try {
-            // Check if profile exists
-            const { data: existingProfile } = await supabase
+            const { error: profileError } = await supabase
                 .from('profiles')
-                .select('id')
-                .eq('id', user.id)
-                .single();
+                .upsert({
+                    id: user.id,
+                    first_name: firstName,
+                    last_name: lastName,
+                    phonenumber: phoneNumber,
+                    email: user.email,
+                    role: profile?.role || 'user',
+                    updated_at: new Date().toISOString(),
+                });
 
-            let error;
-            if (existingProfile) {
-                const { error: updateError } = await supabase
-                    .from('profiles')
-                    .update({
-                        first_name: firstName,
-                        last_name: lastName,
-                        updated_at: new Date().toISOString(),
-                    })
-                    .eq('id', user.id);
-                error = updateError;
-            } else {
-                const { error: insertError } = await supabase
-                    .from('profiles')
-                    .insert({
-                        id: user.id,
-                        first_name: firstName,
-                        last_name: lastName,
-                        role: 'user', // default role
-                        email: user.email,
-                        created_at: new Date().toISOString(),
-                        updated_at: new Date().toISOString(),
-                    });
-                error = insertError;
-            }
-
-            if (error) throw error;
+            if (profileError) throw profileError;
 
             // Refresh profile in context
             if (fetchProfile) await fetchProfile(user.id);
@@ -115,34 +96,52 @@ export default function SetupProfile() {
                     )}
 
                     <form onSubmit={handleSubmit} className="space-y-5">
-                        <div className="space-y-1.5">
-                            <label className="text-sm font-medium text-gray-300">First Name</label>
-                            <div className="relative">
-                                <User size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
-                                <input
-                                    type="text"
-                                    required
-                                    value={firstName}
-                                    onChange={(e) => setFirstName(e.target.value)}
-                                    placeholder="John"
-                                    className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-brand-500/50 transition-all"
-                                />
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-1.5">
+                                <label className="text-sm font-medium text-gray-300">First Name</label>
+                                <div className="relative">
+                                    <User size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+                                    <input
+                                        type="text"
+                                        required
+                                        value={firstName}
+                                        onChange={(e) => setFirstName(e.target.value)}
+                                        placeholder="John"
+                                        className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-brand-500/50 transition-all text-sm"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <label className="text-sm font-medium text-gray-300">Last Name</label>
+                                <div className="relative">
+                                    <User size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+                                    <input
+                                        type="text"
+                                        required
+                                        value={lastName}
+                                        onChange={(e) => setLastName(e.target.value)}
+                                        placeholder="Doe"
+                                        className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-brand-500/50 transition-all text-sm"
+                                    />
+                                </div>
                             </div>
                         </div>
 
                         <div className="space-y-1.5">
-                            <label className="text-sm font-medium text-gray-300">Last Name</label>
+                            <label className="text-sm font-medium text-gray-300">Phone Number (M-Pesa)</label>
                             <div className="relative">
-                                <User size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+                                <Phone size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
                                 <input
-                                    type="text"
+                                    type="tel"
                                     required
-                                    value={lastName}
-                                    onChange={(e) => setLastName(e.target.value)}
-                                    placeholder="Doe"
+                                    value={phoneNumber}
+                                    onChange={(e) => setPhoneNumber(e.target.value)}
+                                    placeholder="07XX XXX XXX"
                                     className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-brand-500/50 transition-all"
                                 />
                             </div>
+                            <p className="text-[10px] text-gray-500 mt-1">This number will be used for your payments and balance updates.</p>
                         </div>
 
                         <button
